@@ -57,7 +57,6 @@ class EasyCSRF
         if (!$token) {
             throw new InvalidCsrfTokenException('Invalid CSRF token');
         }
-
         $sessionToken = $this->session->get($this->session_prefix . $key);
         if (!$sessionToken) {
             throw new InvalidCsrfTokenException('Invalid CSRF session token');
@@ -110,11 +109,30 @@ class EasyCSRF
      */
     protected function referralHash()
     {
-        if (empty($_SERVER['HTTP_USER_AGENT'])) {
-            return sha1($_SERVER['REMOTE_ADDR']);
-        }
+        return sha1($this->getRemoteIP() . $_SERVER['HTTP_USER_AGENT']);
+    }
 
-        return sha1($_SERVER['REMOTE_ADDR'] . $_SERVER['HTTP_USER_AGENT']);
+    /**
+     * Get actual referral IP Address.
+     *
+     * @return string
+     */
+    protected function getRemoteIP()
+    {
+        // AWS Proxy
+        if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            return $_SERVER['HTTP_X_FORWARDED_FOR'];
+        }
+        // Other Generic Proxy
+        elseif (isset($_SERVER['HTTP_CLIENT_IP'])) {
+            return $_SERVER['HTTP_CLIENT_IP'];
+        }
+        // Cloudflare proxy
+        elseif (isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+            return $_SERVER['HTTP_CF_CONNECTING_IP'];
+        }
+        // Default
+        return $_SERVER['REMOTE_ADDR'];
     }
 
     /**
